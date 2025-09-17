@@ -1,0 +1,32 @@
+using UnityEngine;
+
+public class PlayerController : MonoBehaviour
+{
+    public float moveSpeed = 5f;
+    public float jumpForce = 10f;
+    private Rigidbody2D rb;
+
+    // µØÃæ¼ì²â
+    public Transform groundCheck;
+    public LayerMask groundLayer;
+    private bool isGrounded;
+
+    void Start()
+    {
+        rb = GetComponent<Rigidbody2D>();
+    }
+
+    void Update()
+    {
+        // ×óÓÒÒÆ¶¯
+        float moveInput = Input.GetAxis("Horizontal"); // A/D »ò ¡û/¡ú
+        rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
+
+        // ÌøÔ¾
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+        if (Input.GetButtonDown("Jump") && isGrounded) // ¿Õ¸ñ¼ü
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+        }
+    }
+}

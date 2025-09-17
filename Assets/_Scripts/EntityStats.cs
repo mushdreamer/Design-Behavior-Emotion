@@ -33,18 +33,11 @@ public class EntityStats : MonoBehaviour
 
     public void Heal(int healAmount)
     {
-        // --- 核心治疗逻辑在这里 ---
-        // 打印接收到的治疗量，用于调试
-        Debug.Log("Heal method called with amount: " + healAmount);
-
         // 1. 增加生命值
         health += healAmount;
 
         // 2. 使用 Mathf.Clamp 确保生命值不会超过上限
         health = Mathf.Clamp(health, 0, maxHealth);
-
-        // 打印治疗后的最终血量，用于调试
-        Debug.Log("Health after healing: " + health);
 
         // 3. 更新UI
         if (this.CompareTag("Player"))

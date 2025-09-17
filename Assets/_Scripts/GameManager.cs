@@ -41,8 +41,24 @@ public class GameManager : MonoBehaviour
 
     public void LevelComplete()
     {
-        Debug.Log("--- LEVEL COMPLETE ---");
-        // 可以在这里添加逻辑，比如加载下一个场景
-        // SceneManager.LoadScene("NextLevelName");
+        UIManager.Instance.ShowLevelCompletePanel();
+    }
+
+    public void GameOver()
+    {
+        UIManager.Instance.ShowGameOverPanel();
+    }
+
+    // --- 给按钮调用的公共方法 ---
+    public void RestartLevel()
+    {
+        Time.timeScale = 1f; // 恢复游戏速度
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void QuitGame()
+    {
+        Application.Quit();
+        Debug.Log("Quitting Game..."); // 在编辑器中这行会打印
     }
 }

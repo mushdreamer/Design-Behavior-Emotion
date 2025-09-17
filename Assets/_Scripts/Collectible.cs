@@ -17,22 +17,22 @@ public class Collectible : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            EntityStats playerStats = other.GetComponent<EntityStats>();
+            // 【推荐优化】使用GetComponentInParent，代码更健壮
+            EntityStats playerStats = other.GetComponentInParent<EntityStats>();
+
+            // 检查是否真的找到了玩家的属性脚本
+            if (playerStats == null) return;
 
             switch (type)
             {
                 case CollectibleType.Coin:
-                    // 调用GameManager的AddCoin方法
                     GameManager.Instance.AddCoin(value);
                     break;
                 case CollectibleType.HealthPotion:
-                    if (playerStats != null)
-                    {
-                        playerStats.health += value;
-                    }
+                    // 【核心修正】调用Heal方法，而不是直接修改health变量
+                    playerStats.Heal(value);
                     break;
                 case CollectibleType.Key:
-                    // 调用GameManager的CollectKey方法
                     GameManager.Instance.CollectKey();
                     break;
             }

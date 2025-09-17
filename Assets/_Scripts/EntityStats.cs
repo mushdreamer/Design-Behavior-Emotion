@@ -2,13 +2,14 @@ using UnityEngine;
 
 public class EntityStats : MonoBehaviour
 {
-    public int health;
-    public int maxHealth = 100; // 新增最大生命值
+    [Header("Stats")]
+    public int health = 100;
+    public int maxHealth = 100;
 
     void Start()
     {
-        // 游戏开始时初始化一次UI
-        if (CompareTag("Player"))
+        // 游戏开始时，为玩家初始化一次UI
+        if (this.CompareTag("Player"))
         {
             UIManager.Instance.UpdateHealth(health);
         }
@@ -17,23 +18,48 @@ public class EntityStats : MonoBehaviour
     public void TakeDamage(int damageAmount)
     {
         health -= damageAmount;
-        // 更新UI
-        if (CompareTag("Player"))
+        // 确保血量不会低于0
+        health = Mathf.Max(health, 0);
+
+        if (this.CompareTag("Player"))
+        {
+            UIManager.Instance.UpdateHealth(health);
+            if (health <= 0)
+            {
+                Die();
+            }
+        }
+    }
+
+    public void Heal(int healAmount)
+    {
+        // --- 核心治疗逻辑在这里 ---
+        // 打印接收到的治疗量，用于调试
+        Debug.Log("Heal method called with amount: " + healAmount);
+
+        // 1. 增加生命值
+        health += healAmount;
+
+        // 2. 使用 Mathf.Clamp 确保生命值不会超过上限
+        health = Mathf.Clamp(health, 0, maxHealth);
+
+        // 打印治疗后的最终血量，用于调试
+        Debug.Log("Health after healing: " + health);
+
+        // 3. 更新UI
+        if (this.CompareTag("Player"))
         {
             UIManager.Instance.UpdateHealth(health);
         }
     }
 
-    // 新增一个回血方法
-    public void Heal(int healAmount)
+    private void Die()
     {
-        health += healAmount;
-        // 使用 Mathf.Clamp 确保血量不会超过上限
-        health = Mathf.Clamp(health, 0, maxHealth);
-        // 更新UI
-        if (CompareTag("Player"))
+        if (this.CompareTag("Player"))
         {
-            UIManager.Instance.UpdateHealth(health);
+            GameManager.Instance.GameOver();
+            // 禁用玩家对象
+            gameObject.SetActive(false);
         }
     }
 }

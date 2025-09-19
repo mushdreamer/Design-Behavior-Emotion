@@ -1,16 +1,13 @@
-// AgentController.cs (Modified)
 using UnityEngine;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(PlayerController), typeof(EntityStats), typeof(AgentNavigation))]
 public class AgentController : MonoBehaviour
 {
-    // --- 组件引用 (不变) ---
     private AgentNavigation navigationModule;
     private EntityStats playerStats;
     private PerceptionData perceptionData = new PerceptionData();
 
-    // --- 策略引用 (不变) ---
     [Header("Policy")]
     public MonoBehaviour policyScript;
     private IAgentPolicy currentPolicy;
@@ -18,11 +15,10 @@ public class AgentController : MonoBehaviour
     [Header("Perception")]
     public float perceptionRadius = 15f;
 
-    // --- 【新增】路径管理 ---
     private List<Waypoint> currentPath;
     private int currentPathIndex;
-    private GameObject finalTarget; // 存储策略给出的最终目标
-    public float waypointReachedThreshold = 1f; // 到达路径点的距离阈值
+    private GameObject finalTarget; // Agent当前需要完成的最终目标
+    public float waypointReachedThreshold = 1f;
 
     void Awake()
     {
@@ -49,36 +45,52 @@ public class AgentController : MonoBehaviour
     {
         if (currentPolicy == null) return;
 
-        // 1. 感知
+        // --- 1. 感知环境 ---
         PerceiveEnvironment();
 
-        // 2. 决策：从策略脚本获取高级目标
-        GameObject newTarget = currentPolicy.DecideTarget(perceptionData);
+        // --- 2. 决策：从策略脚本获取“理想”目标 ---
+        // 这一步是AI的“思考”，它根据当前情况（是否持有钥匙等）决定最应该做什么。
+        GameObject idealTarget = currentPolicy.DecideTarget(perceptionData);
 
-        // 3. 【核心修改】路径规划与执行
-        // 如果目标发生变化，则重新规划路径
-        if (newTarget != finalTarget)
+        // --- 3. 目标管理与路径更新 ---
+        // 检查是否需要更新主目标和路径。
+        // 触发更新的情况有两种：
+        // A) 策略给出了一个全新的目标 (比如拿完钥匙后，理想目标从“钥匙”变为“门”)
+        // B) 当前的主目标被销毁了 (比如钥匙被收集后，finalTarget 自动变成了 null)
+        if (idealTarget != finalTarget)
         {
-            finalTarget = newTarget;
+            Debug.Log($"[AgentController] Target has changed. Old: {(finalTarget != null ? finalTarget.name : "COMPLETED/NULL")}, New: {(idealTarget != null ? idealTarget.name : "null")}. Planning new path.");
+            finalTarget = idealTarget; // 更新主目标
+
             if (finalTarget != null)
             {
-                // 请求路径管理器规划路径
+                // 为新的主目标规划路径
                 currentPath = WaypointManager.Instance.FindPath(transform.position, finalTarget.transform.position);
                 currentPathIndex = 0;
             }
             else
             {
-                currentPath = null; // 没有目标，就没有路径
+                // 如果没有理想目标，则没有路径
+                currentPath = null;
             }
         }
 
-        // 如果有路径，则沿着路径移动
+        // --- 4. 导航执行 ---
+        // 如果当前有有效路径，则沿着路径移动
         if (currentPath != null && currentPath.Count > 0)
         {
-            // 获取当前要移动向的路径点
             Waypoint currentWaypoint = currentPath[currentPathIndex];
 
-            // 将当前路径点作为“微观操作”的目标，交给导航模块
+            // 增加防御性检查：如果路径中的某个点也被意外销毁，作废路径以防崩溃
+            if (currentWaypoint == null)
+            {
+                Debug.LogWarning("[AgentController] A waypoint in the current path was destroyed. Invalidating path.");
+                currentPath = null;
+                finalTarget = null; // 强制重新决策
+                return;
+            }
+
+            // 指挥导航模块向当前路径点移动
             navigationModule.NavigateTowards(currentWaypoint.gameObject);
 
             // 检查是否已到达当前路径点
@@ -98,10 +110,8 @@ public class AgentController : MonoBehaviour
         }
     }
 
-    // PerceiveEnvironment 方法保持不变...
     private void PerceiveEnvironment()
     {
-        // ... (你的代码)
         perceptionData.visibleCollectibles.Clear();
         perceptionData.visibleMonsters.Clear();
         perceptionData.visibleDoor = null;
